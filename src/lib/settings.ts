@@ -13,9 +13,25 @@ export type Settings = {
   autoTasks: boolean;
   /** Tageslimit für Token (Eingabe + Ausgabe) als Kosten-Notbremse. */
   dailyTokenCap: number;
+  name: string;
+  city: string;
+  briefingEnabled: boolean;
+  /** HH:MM */
+  briefingTime: string;
+  /** AgentMail-Postfach, z. B. mein-agent@agentmail.to */
+  mailInbox: string;
 };
 
-const DEFAULTS: Settings = { model: 'haiku', autoTasks: true, dailyTokenCap: 1_000_000 };
+const DEFAULTS: Settings = {
+  model: 'haiku',
+  autoTasks: true,
+  dailyTokenCap: 1_000_000,
+  name: 'Max',
+  city: 'Langenau',
+  briefingEnabled: false,
+  briefingTime: '07:00',
+  mailInbox: '',
+};
 
 export async function getSettings(): Promise<Settings> {
   const raw = await kvGet('settings');
@@ -39,4 +55,15 @@ export async function setApiKey(key: string): Promise<void> {
 }
 export async function clearApiKey(): Promise<void> {
   await SecureStore.deleteItemAsync(KEY_NAME);
+}
+
+const MAIL_KEY = 'agentmail_api_key';
+export async function getMailKey(): Promise<string | null> {
+  return SecureStore.getItemAsync(MAIL_KEY);
+}
+export async function setMailKey(key: string): Promise<void> {
+  await SecureStore.setItemAsync(MAIL_KEY, key.trim());
+}
+export async function clearMailKey(): Promise<void> {
+  await SecureStore.deleteItemAsync(MAIL_KEY);
 }

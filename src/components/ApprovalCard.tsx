@@ -1,39 +1,19 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { status, ApprovalRequest } from '../lib/status';
-import { colors } from '../theme';
+import { Text, View } from 'react-native';
+import { ApprovalRequest, status } from '../lib/status';
+import { useTheme } from '../theme';
+import { Btn, Row } from './ui';
 
 export function ApprovalCard({ approval }: { approval: ApprovalRequest }) {
+  const t = useTheme();
   return (
-    <View style={styles.card}>
-      <Text style={styles.title}>Bestätigung nötig: {approval.title}</Text>
-      <Text style={styles.detail}>{approval.detail}</Text>
-      <View style={styles.row}>
-        <Pressable style={[styles.btn, styles.no]} onPress={() => status.answerApproval(false)}>
-          <Text style={styles.noText}>Nein</Text>
-        </Pressable>
-        <Pressable style={[styles.btn, styles.yes]} onPress={() => status.answerApproval(true)}>
-          <Text style={styles.yesText}>Ja, ausführen</Text>
-        </Pressable>
-      </View>
+    <View style={{ backgroundColor: t.surface, borderRadius: 24, padding: 16, marginVertical: 8 }}>
+      <Text style={{ color: t.accent, fontSize: 13, fontWeight: '600', marginBottom: 6 }}>Bestätigung nötig</Text>
+      <Text style={{ color: t.text, fontSize: 17, fontWeight: '500', marginBottom: 6 }}>{approval.title}</Text>
+      <Text style={{ color: t.sub, fontSize: 15, lineHeight: 21, marginBottom: 14 }}>{approval.detail}</Text>
+      <Row gap={10}>
+        <Btn label="Abbrechen" kind="tonal" onPress={() => status.answerApproval(false)} style={{ flex: 1 }} />
+        <Btn label="Ausführen" onPress={() => status.answerApproval(true)} style={{ flex: 1 }} />
+      </Row>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: '#2a2415',
-    borderColor: colors.warn,
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 14,
-    marginVertical: 8,
-  },
-  title: { color: colors.warn, fontWeight: '700', fontSize: 15, marginBottom: 6 },
-  detail: { color: colors.text, fontSize: 14, marginBottom: 12 },
-  row: { flexDirection: 'row', gap: 10 },
-  btn: { flex: 1, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
-  yes: { backgroundColor: colors.warn },
-  yesText: { color: '#1b1405', fontWeight: '700' },
-  no: { backgroundColor: colors.card2, borderWidth: 1, borderColor: colors.border },
-  noText: { color: colors.text, fontWeight: '600' },
-});

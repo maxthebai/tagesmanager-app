@@ -1,70 +1,135 @@
+import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { BackHandler, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AgentStatusBar } from './src/components/AgentStatusBar';
+import { Drawer } from './src/components/Drawer';
 import { LiveView } from './src/components/LiveView';
+import { TopBar } from './src/components/TopBar';
+import { kvGet, kvSet } from './src/lib/db';
+import { initNotifications } from './src/lib/notifications';
+import { Screen, TITLES } from './src/nav';
+import { BRIEFING_PROMPT } from './src/prompts';
+import { BudgetScreen } from './src/screens/BudgetScreen';
 import { ChatScreen } from './src/screens/ChatScreen';
+import { FocusScreen } from './src/screens/FocusScreen';
+import { GradesScreen } from './src/screens/GradesScreen';
+import { HabitsScreen } from './src/screens/HabitsScreen';
+import { LearnScreen } from './src/screens/LearnScreen';
 import { LogScreen } from './src/screens/LogScreen';
+import { MailScreen } from './src/screens/MailScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { TasksScreen } from './src/screens/TasksScreen';
+import { TimetableScreen } from './src/screens/TimetableScreen';
 import { TodayScreen } from './src/screens/TodayScreen';
-import { colors } from './src/theme';
-
-type Tab = 'chat' | 'today' | 'tasks' | 'log' | 'settings';
-const TABS: { key: Tab; label: string; icon: string }[] = [
-  { key: 'chat', label: 'Agent', icon: '💬' },
-  { key: 'today', label: 'Heute', icon: '📅' },
-  { key: 'tasks', label: 'Aufgaben', icon: '✅' },
-  { key: 'log', label: 'Protokoll', icon: '🕘' },
-  { key: 'settings', label: 'Einstellungen', icon: '⚙️' },
-];
+import { useTheme } from './src/theme';
 
 function Shell() {
+  const t = useTheme();
   const insets = useSafeAreaInsets();
-  const [tab, setTab] = useState<Tab>('chat');
+  const [screen, setScreen] = useState<Screen>('chat');
+  const [menu, setMenu] = useState(false);
   const [live, setLive] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
+  const handled = useRef<string | null>(null);
 
   const consume = useCallback(() => setPendingPrompt(null), []);
   const runPrompt = useCallback((p: string) => {
-    setTab('chat');
+    setScreen('chat');
     setPendingPrompt(p);
   }, []);
 
-  const show = (t: Tab) => (tab === t ? styles.visible : styles.hidden);
+  useEffect(() => {
+    void initNotifications();
+  }, []);
+
+  // Tipp auf die Briefing-Benachrichtigung startet das Briefing (einmal pro Benachrichtigung).
+  const last = Notifications.useLastNotificationResponse();
+  useEffect(() => {
+    const id = last?.notification.request.identifier;
+    const kind = last?.notification.request.content.data?.kind;
+    if (!id || kind !== 'briefing' || handled.current === id) return;
+    handled.current = id;
+    void (async () => {
+      const day = new Date().toDateString();
+      if ((await kvGet('briefing_last_run')) === day) return;
+      await kvSet('briefing_last_run', day);
+      runPrompt(BRIEFING_PROMPT);
+    })();
+  }, [last, runPrompt]);
+
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (menu) {
+        setMenu(false);
+        return true;
+      }
+      if (live) {
+        setLive(false);
+        return true;
+      }
+      if (screen !== 'chat') {
+        setScreen('chat');
+        return true;
+      }
+      return false;
+    });
+    return () => sub.remove();
+  }, [menu, live, screen]);
+
+  const show = (s: Screen) => (screen === s ? { flex: 1 } : { display: 'none' as const });
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      <StatusBar style="light" />
-      <AgentStatusBar onPress={() => setLive(true)} />
-      <View style={styles.body}>
+    <View style={{ flex: 1, backgroundColor: t.bg, paddingTop: insets.top }}>
+      <StatusBar style={t.dark ? 'light' : 'dark'} />
+      <TopBar title={TITLES[screen]} onMenu={() => setMenu(true)} onStatus={() => setLive(true)} />
+      <View style={{ flex: 1 }}>
         <View style={show('chat')}>
-          <ChatScreen active={tab === 'chat'} pendingPrompt={pendingPrompt} onPromptConsumed={consume} />
+          <ChatScreen active={screen === 'chat'} pendingPrompt={pendingPrompt} onPromptConsumed={consume} />
         </View>
         <View style={show('today')}>
-          <TodayScreen active={tab === 'today'} onPrompt={runPrompt} />
+          <TodayScreen active={screen === 'today'} onPrompt={runPrompt} />
         </View>
         <View style={show('tasks')}>
-          <TasksScreen active={tab === 'tasks'} />
+          <TasksScreen active={screen === 'tasks'} />
+        </View>
+        <View style={show('timetable')}>
+          <TimetableScreen active={screen === 'timetable'} onPrompt={runPrompt} />
+        </View>
+        <View style={show('grades')}>
+          <GradesScreen active={screen === 'grades'} />
+        </View>
+        <View style={show('learn')}>
+          <LearnScreen active={screen === 'learn'} onPrompt={runPrompt} />
+        </View>
+        <View style={show('focus')}>
+          <FocusScreen active={screen === 'focus'} />
+        </View>
+        <View style={show('habits')}>
+          <HabitsScreen active={screen === 'habits'} />
+        </View>
+        <View style={show('budget')}>
+          <BudgetScreen active={screen === 'budget'} />
+        </View>
+        <View style={show('mail')}>
+          <MailScreen active={screen === 'mail'} onPrompt={runPrompt} />
         </View>
         <View style={show('log')}>
-          <LogScreen active={tab === 'log'} />
+          <LogScreen active={screen === 'log'} />
         </View>
         <View style={show('settings')}>
-          <SettingsScreen active={tab === 'settings'} />
+          <SettingsScreen active={screen === 'settings'} />
         </View>
       </View>
-      <View style={[styles.tabs, { paddingBottom: Math.max(insets.bottom, 8) }]}>
-        {TABS.map((t) => (
-          <Pressable key={t.key} style={styles.tab} onPress={() => setTab(t.key)}>
-            <Text style={styles.icon}>{t.icon}</Text>
-            <Text style={[styles.tabLabel, tab === t.key && { color: colors.accent }]} numberOfLines={1}>
-              {t.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <Drawer
+        visible={menu}
+        current={screen}
+        onSelect={(s) => {
+          setScreen(s);
+          setMenu(false);
+        }}
+        onClose={() => setMenu(false)}
+      />
       <LiveView visible={live} onClose={() => setLive(false)} />
     </View>
   );
@@ -77,20 +142,3 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  body: { flex: 1 },
-  visible: { flex: 1 },
-  hidden: { display: 'none' },
-  tabs: {
-    flexDirection: 'row',
-    backgroundColor: colors.card,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: 8,
-  },
-  tab: { flex: 1, alignItems: 'center' },
-  icon: { fontSize: 18 },
-  tabLabel: { color: colors.sub, fontSize: 11, marginTop: 2 },
-});

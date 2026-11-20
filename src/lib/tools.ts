@@ -1,18 +1,16 @@
 import * as cal from './calendar';
 import * as db from './db';
+import { cancelNotification } from './notifications';
 import { getSettings } from './settings';
 import { status } from './status';
 import { fmtDateTime, fmtDay, parseDate } from './time';
+import { declined, fail, Input, ISO_HINT, needsApproval, ok, str, ToolDef, ToolResult } from './toolkit';
+import { execStudy, STUDY_TOOLS } from './toolsStudy';
+import { execWorld, WORLD_TOOLS } from './toolsWorld';
 
-export type ToolDef = {
-  name: string;
-  description: string;
-  input_schema: { type: 'object'; properties: Record<string, unknown>; required?: string[] };
-};
+export type { ToolDef, ToolResult };
 
-const ISO_HINT = 'ISO 8601 in lokaler Zeit ohne Zeitzone, z. B. 2026-11-21T15:30:00';
-
-export const TOOLS: ToolDef[] = [
+const CORE_TOOLS: ToolDef[] = [
   {
     name: 'get_events',
     description:
@@ -112,22 +110,7 @@ export const TOOLS: ToolDef[] = [
   },
 ];
 
-export type ToolResult = { content: string; isError: boolean };
-type Input = Record<string, unknown>;
-
-const ok = (data: unknown): ToolResult => ({ content: JSON.stringify(data), isError: false });
-const fail = (msg: string): ToolResult => ({ content: msg, isError: true });
-const declined = (): ToolResult => ({
-  content: 'Der Nutzer hat die Aktion abgelehnt. Nichts wurde geändert. Frage nach, was stattdessen gewünscht ist.',
-  isError: false,
-});
-
-const str = (v: unknown): string | undefined => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
-
-async function needsApproval(autoOk: boolean, title: string, detail: string): Promise<boolean> {
-  if (autoOk) return true;
-  return status.askApproval(title, detail);
-}
+export const TOOLS: ToolDef[] = [...CORE_TOOLS, ...STUDY_TOOLS, ...WORLD_TOOLS];
 
 export async function executeTool(name: string, input: Input, runId: number): Promise<ToolResult> {
   try {
@@ -271,8 +254,13 @@ export async function executeTool(name: string, input: Input, runId: number): Pr
         return ok({ saved: true, memory_id: id });
       }
 
-      default:
+      default: {
+        const study = await execStudy(name, input, runId);
+        if (study) return study;
+        const world = await execWorld(name, input, runId);
+        if (world) return world;
         return fail(`Unbekanntes Werkzeug: ${name}`);
+      }
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -295,7 +283,11 @@ export type UndoInfo =
   | { type: 'event_updated'; id: string; old: EventSnapshot }
   | { type: 'event_deleted'; old: EventSnapshot }
   | { type: 'task_created'; id: number }
-  | { type: 'task_done'; id: number; wasDone: boolean };
+  | { type: 'task_done'; id: number; wasDone: boolean }
+  | { type: 'grade_created'; id: number }
+  | { type: 'habit_created'; id: number }
+  | { type: 'expense_created'; id: number }
+  | { type: 'reminder_created'; id: number };
 
 export async function undoAction(info: UndoInfo): Promise<void> {
   switch (info.type) {
@@ -326,6 +318,21 @@ export async function undoAction(info: UndoInfo): Promise<void> {
     case 'task_done':
       await db.setTaskDone(info.id, info.wasDone);
       return;
+    case 'grade_created':
+      await db.deleteGrade(info.id);
+      return;
+    case 'habit_created':
+      await db.archiveHabit(info.id);
+      return;
+    case 'expense_created':
+      await db.deleteExpense(info.id);
+      return;
+    case 'reminder_created': {
+      const r = await db.getReminder(info.id);
+      if (r?.notif_id) await cancelNotification(r.notif_id);
+      await db.deleteReminder(info.id);
+      return;
+    }
   }
 }
 

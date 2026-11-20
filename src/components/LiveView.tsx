@@ -1,77 +1,67 @@
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { stopRun } from '../lib/agent';
 import { StepKind, useStatus } from '../lib/status';
-import { colors } from '../theme';
+import { useTheme } from '../theme';
 import { ApprovalCard } from './ApprovalCard';
+import { Btn } from './ui';
 
-const ICON: Record<StepKind, string> = { info: '•', tool: '🔧', result: '✔', approval: '❓', error: '⚠' };
+const MARK: Record<StepKind, string> = { info: '•', tool: '›', result: '✓', approval: '?', error: '!' };
 
 function time(ts: number): string {
   const d = new Date(ts);
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
-/** Live-Ansicht: alle Schritte des laufenden oder letzten Auftrags, Bestätigungen und Stopp. */
+/** Live-Ansicht als Bottom-Sheet: alle Schritte des laufenden oder letzten Auftrags, Bestätigungen und Stopp. */
 export function LiveView({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const t = useTheme();
   const s = useStatus();
   const insets = useSafeAreaInsets();
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={[styles.wrap, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 8 }]}>
-        <View style={styles.head}>
-          <Text style={styles.title}>Was der Agent gerade tut</Text>
-          <Pressable onPress={onClose} hitSlop={12}>
-            <Text style={styles.close}>Schließen</Text>
-          </Pressable>
-        </View>
-        <Text style={styles.state}>{s.label}</Text>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose} statusBarTranslucent>
+      <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' }} onPress={onClose} />
+      <View
+        style={{
+          backgroundColor: t.surface,
+          borderTopLeftRadius: 28,
+          borderTopRightRadius: 28,
+          paddingHorizontal: 20,
+          paddingTop: 10,
+          paddingBottom: insets.bottom + 16,
+          maxHeight: '82%',
+        }}
+      >
+        <View style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: t.surface3, marginBottom: 14 }} />
+        <Text style={{ color: t.text, fontSize: 20, fontWeight: '500' }}>Was der Agent gerade tut</Text>
+        <Text style={{ color: t.mute, fontSize: 14, marginTop: 4, marginBottom: 10 }}>{s.label}</Text>
         {s.approval ? <ApprovalCard approval={s.approval} /> : null}
-        <ScrollView style={styles.list} contentContainerStyle={{ paddingBottom: 12 }}>
-          {s.steps.length === 0 ? <Text style={styles.empty}>Noch keine Schritte. Starte einen Auftrag im Chat.</Text> : null}
+        <ScrollView style={{ flexGrow: 0 }} contentContainerStyle={{ paddingBottom: 8 }}>
+          {s.steps.length === 0 ? (
+            <Text style={{ color: t.mute, fontSize: 15, marginVertical: 12 }}>Noch keine Schritte. Starte einen Auftrag im Chat.</Text>
+          ) : null}
           {s.steps.map((st) => (
-            <View key={st.id} style={styles.step}>
-              <Text style={styles.icon}>{ICON[st.kind]}</Text>
+            <View key={st.id} style={{ flexDirection: 'row', gap: 12, paddingVertical: 8 }}>
+              <Text style={{ width: 16, color: st.kind === 'error' ? t.err : st.kind === 'result' ? t.ok : t.accent, fontSize: 16, fontWeight: '700' }}>
+                {MARK[st.kind]}
+              </Text>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.stepLabel, st.kind === 'error' && { color: colors.err }]}>{st.label}</Text>
-                {st.detail ? <Text style={styles.stepDetail}>{st.detail}</Text> : null}
+                <Text style={{ color: st.kind === 'error' ? t.err : t.text, fontSize: 15 }}>{st.label}</Text>
+                {st.detail ? (
+                  <Text style={{ color: t.mute, fontSize: 12, marginTop: 2 }} numberOfLines={3}>
+                    {st.detail}
+                  </Text>
+                ) : null}
               </View>
-              <Text style={styles.ts}>{time(st.ts)}</Text>
+              <Text style={{ color: t.mute, fontSize: 11 }}>{time(st.ts)}</Text>
             </View>
           ))}
         </ScrollView>
-        {s.running ? (
-          <Pressable style={styles.stop} onPress={stopRun}>
-            <Text style={styles.stopText}>Stopp</Text>
-          </Pressable>
-        ) : null}
+        <View style={{ marginTop: 10 }}>
+          {s.running ? <Btn label="Stopp" kind="danger" onPress={stopRun} /> : <Btn label="Schließen" kind="tonal" onPress={onClose} />}
+        </View>
       </View>
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 16 },
-  head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  title: { color: colors.text, fontSize: 20, fontWeight: '700' },
-  close: { color: colors.accent, fontSize: 15, fontWeight: '600' },
-  state: { color: colors.sub, fontSize: 14, marginBottom: 8 },
-  list: { flex: 1 },
-  empty: { color: colors.sub, marginTop: 20 },
-  step: {
-    flexDirection: 'row',
-    gap: 10,
-    backgroundColor: colors.card,
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 6,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  icon: { width: 22, color: colors.text, fontSize: 15 },
-  stepLabel: { color: colors.text, fontSize: 14, fontWeight: '600' },
-  stepDetail: { color: colors.sub, fontSize: 12, marginTop: 2 },
-  ts: { color: colors.sub, fontSize: 11 },
-  stop: { backgroundColor: colors.err, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
-  stopText: { color: '#1b0a0a', fontWeight: '800', fontSize: 16 },
-});

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, FlatList, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
+import { Btn, Card, Chip, Empty, Field, Page, Row, Section, Sub } from '../components/ui';
 import { addTask, deleteTask, listTasks, setTaskDone, Task } from '../lib/db';
-import { colors, common } from '../theme';
+import { useTheme } from '../theme';
 
 const KINDS: { key: string; label: string }[] = [
   { key: 'homework', label: 'Hausaufgabe' },
@@ -11,11 +12,14 @@ const KINDS: { key: string; label: string }[] = [
 ];
 
 export function TasksScreen({ active }: { active: boolean }) {
+  const t = useTheme();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState('');
   const [subject, setSubject] = useState('');
   const [due, setDue] = useState('');
   const [kind, setKind] = useState('homework');
+  const [showDone, setShowDone] = useState(false);
 
   const load = useCallback(async () => setTasks(await listTasks(true)), []);
   useEffect(() => {
@@ -32,74 +36,93 @@ export function TasksScreen({ active }: { active: boolean }) {
     setTitle('');
     setSubject('');
     setDue('');
+    setAdding(false);
     await load();
   };
 
-  return (
-    <FlatList
-      style={common.screen}
-      contentContainerStyle={common.pad}
-      data={tasks}
-      keyExtractor={(t) => String(t.id)}
-      ListHeaderComponent={
-        <View>
-          <Text style={common.h1}>Aufgaben</Text>
-          <View style={common.card}>
-            <TextInput style={common.input} placeholder="Neue Aufgabe" placeholderTextColor={colors.sub} value={title} onChangeText={setTitle} />
-            <View style={[common.row, { gap: 8, marginTop: 8 }]}>
-              <TextInput style={[common.input, { flex: 1 }]} placeholder="Fach" placeholderTextColor={colors.sub} value={subject} onChangeText={setSubject} />
-              <TextInput style={[common.input, { flex: 1 }]} placeholder="Fällig JJJJ-MM-TT" placeholderTextColor={colors.sub} value={due} onChangeText={setDue} />
-            </View>
-            <View style={[common.row, { flexWrap: 'wrap', gap: 8, marginTop: 8 }]}>
-              {KINDS.map((k) => (
-                <Pressable
-                  key={k.key}
-                  onPress={() => setKind(k.key)}
-                  style={[common.btnGhost, { paddingVertical: 6, paddingHorizontal: 12 }, kind === k.key && { borderColor: colors.accent }]}
-                >
-                  <Text style={[common.btnGhostText, { fontSize: 13 }, kind === k.key && { color: colors.accent }]}>{k.label}</Text>
-                </Pressable>
-              ))}
-            </View>
-            <Pressable style={[common.btn, { marginTop: 10 }]} onPress={() => void add()}>
-              <Text style={common.btnText}>Hinzufügen</Text>
-            </Pressable>
-          </View>
-        </View>
+  const open = tasks.filter((x) => x.done !== 1);
+  const done = tasks.filter((x) => x.done === 1);
+
+  const item = (x: Task) => (
+    <Card
+      key={x.id}
+      onPress={async () => {
+        await setTaskDone(x.id, x.done !== 1);
+        await load();
+      }}
+      onLongPress={() =>
+        Alert.alert('Löschen?', x.title, [
+          { text: 'Abbrechen', style: 'cancel' },
+          {
+            text: 'Löschen',
+            style: 'destructive',
+            onPress: async () => {
+              await deleteTask(x.id);
+              await load();
+            },
+          },
+        ])
       }
-      ListEmptyComponent={<Text style={common.sub}>Noch keine Aufgaben. Du kannst sie auch dem Agenten diktieren.</Text>}
-      renderItem={({ item }) => (
-        <Pressable
-          style={[common.card, item.done === 1 && { opacity: 0.5 }]}
-          onPress={async () => {
-            await setTaskDone(item.id, item.done !== 1);
-            await load();
+      style={x.done === 1 ? { opacity: 0.5 } : undefined}
+    >
+      <Row gap={14}>
+        <View
+          style={{
+            width: 22,
+            height: 22,
+            borderRadius: 11,
+            borderWidth: 2,
+            borderColor: x.done === 1 ? t.accent : t.mute,
+            backgroundColor: x.done === 1 ? t.accent : 'transparent',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
-          onLongPress={() =>
-            Alert.alert('Löschen?', item.title, [
-              { text: 'Abbrechen', style: 'cancel' },
-              {
-                text: 'Löschen',
-                style: 'destructive',
-                onPress: async () => {
-                  await deleteTask(item.id);
-                  await load();
-                },
-              },
-            ])
-          }
         >
-          <Text style={[common.text, item.done === 1 && { textDecorationLine: 'line-through' }]}>
-            {item.done === 1 ? '☑ ' : '☐ '}
-            {item.title}
-          </Text>
-          <Text style={common.sub}>
-            {KINDS.find((k) => k.key === item.kind)?.label ?? 'Sonstiges'}
-            {item.subject ? ` · ${item.subject}` : ''}
-            {item.due ? ` · fällig ${item.due}` : ''}
-          </Text>
-        </Pressable>
+          {x.done === 1 ? <Text style={{ color: t.onAccent, fontSize: 13, fontWeight: '700' }}>✓</Text> : null}
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: t.text, fontSize: 16, textDecorationLine: x.done === 1 ? 'line-through' : 'none' }}>{x.title}</Text>
+          <Sub>
+            {KINDS.find((k) => k.key === x.kind)?.label ?? 'Sonstiges'}
+            {x.subject ? ` · ${x.subject}` : ''}
+            {x.due ? ` · fällig ${x.due}` : ''}
+          </Sub>
+        </View>
+      </Row>
+    </Card>
+  );
+
+  return (
+    <Page>
+      {adding ? (
+        <Card>
+          <Field placeholder="Neue Aufgabe" value={title} onChangeText={setTitle} autoFocus />
+          <Row style={{ marginTop: 8 }}>
+            <Field style={{ flex: 1 }} placeholder="Fach" value={subject} onChangeText={setSubject} />
+            <Field style={{ flex: 1 }} placeholder="Fällig JJJJ-MM-TT" value={due} onChangeText={setDue} />
+          </Row>
+          <Row style={{ flexWrap: 'wrap', marginTop: 10 }}>
+            {KINDS.map((k) => (
+              <Chip key={k.key} label={k.label} selected={kind === k.key} onPress={() => setKind(k.key)} />
+            ))}
+          </Row>
+          <Row style={{ marginTop: 12 }}>
+            <Btn label="Hinzufügen" onPress={() => void add()} style={{ flex: 1 }} />
+            <Btn label="Abbrechen" kind="text" onPress={() => setAdding(false)} />
+          </Row>
+        </Card>
+      ) : (
+        <Btn label="+ Neue Aufgabe" kind="tonal" onPress={() => setAdding(true)} style={{ marginBottom: 14 }} />
       )}
-    />
+      {open.length === 0 ? <Empty text="Nichts zu tun. Du kannst Aufgaben auch dem Agenten diktieren." /> : open.map(item)}
+      {done.length > 0 ? (
+        <Section title={`Erledigt (${done.length})`}>
+          <Pressable onPress={() => setShowDone((v) => !v)}>
+            <Text style={{ color: t.accent, marginBottom: 10 }}>{showDone ? 'Ausblenden' : 'Anzeigen'}</Text>
+          </Pressable>
+          {showDone ? done.map(item) : null}
+        </Section>
+      ) : null}
+    </Page>
   );
 }

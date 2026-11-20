@@ -1,60 +1,61 @@
-import { StyleSheet } from 'react-native';
+import { useColorScheme } from 'react-native';
 
-export const colors = {
-  bg: '#0e1013',
-  card: '#181b21',
-  card2: '#21252d',
-  border: '#2b303a',
-  text: '#e9ecf2',
-  sub: '#9aa3b2',
-  accent: '#6ea8ff',
-  ok: '#4ade80',
-  warn: '#fbbf24',
-  err: '#f87171',
+export type Theme = {
+  dark: boolean;
+  bg: string;
+  surface: string;
+  surface2: string;
+  surface3: string;
+  text: string;
+  sub: string;
+  mute: string;
+  accent: string;
+  onAccent: string;
+  accentSoft: string;
+  ok: string;
+  warn: string;
+  err: string;
+  line: string;
 };
 
-export const common = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  pad: { padding: 16 },
-  h1: { color: colors.text, fontSize: 22, fontWeight: '700', marginBottom: 12 },
-  h2: { color: colors.text, fontSize: 16, fontWeight: '600', marginTop: 16, marginBottom: 8 },
-  text: { color: colors.text, fontSize: 15 },
-  sub: { color: colors.sub, fontSize: 13 },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  row: { flexDirection: 'row', alignItems: 'center' },
-  input: {
-    backgroundColor: colors.card2,
-    color: colors.text,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  btn: {
-    backgroundColor: colors.accent,
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-  },
-  btnText: { color: '#0b1220', fontWeight: '700', fontSize: 15 },
-  btnGhost: {
-    backgroundColor: colors.card2,
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  btnGhostText: { color: colors.text, fontWeight: '600', fontSize: 15 },
-});
+// Farben angelehnt an die Gemini-App (Material 3, hell und dunkel)
+const dark: Theme = {
+  dark: true,
+  bg: '#131314',
+  surface: '#1e1f20',
+  surface2: '#282a2c',
+  surface3: '#333537',
+  text: '#e3e3e3',
+  sub: '#c4c7c5',
+  mute: '#8e918f',
+  accent: '#a8c7fa',
+  onAccent: '#062e6f',
+  accentSoft: '#0842a0',
+  ok: '#81c995',
+  warn: '#fdd663',
+  err: '#f2b8b5',
+  line: '#37393b',
+};
+
+const light: Theme = {
+  dark: false,
+  bg: '#ffffff',
+  surface: '#f0f4f9',
+  surface2: '#e9eef6',
+  surface3: '#dde3ea',
+  text: '#1f1f1f',
+  sub: '#444746',
+  mute: '#747775',
+  accent: '#0b57d0',
+  onAccent: '#ffffff',
+  accentSoft: '#d3e3fd',
+  ok: '#1e8e3e',
+  warn: '#b06000',
+  err: '#b3261e',
+  line: '#e1e3e1',
+};
+
+export function useTheme(): Theme {
+  const scheme = useColorScheme();
+  return scheme === 'light' ? light : dark;
+}

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, FlatList, Pressable, Text, View } from 'react-native';
+import { Alert } from 'react-native';
+import { Btn, Card, Empty, Page, Sub, Body } from '../components/ui';
 import { listLog, LogRow, markUndone } from '../lib/db';
 import { undoAction, UndoInfo } from '../lib/tools';
-import { colors, common } from '../theme';
+import { useTheme } from '../theme';
 
 function fmt(ts: number): string {
   const d = new Date(ts);
@@ -10,19 +11,15 @@ function fmt(ts: number): string {
   return `${p(d.getDate())}.${p(d.getMonth() + 1)}. ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-const KIND_COLOR: Record<string, string> = {
-  action: colors.ok,
-  error: colors.err,
-  run: colors.accent,
-  tool: colors.sub,
-};
-
 export function LogScreen({ active }: { active: boolean }) {
+  const t = useTheme();
   const [rows, setRows] = useState<LogRow[]>([]);
   const load = useCallback(async () => setRows(await listLog(150)), []);
   useEffect(() => {
     if (active) void load();
   }, [active, load]);
+
+  const color: Record<string, string> = { action: t.ok, error: t.err, run: t.accent, tool: t.mute };
 
   const undo = (row: LogRow) => {
     if (!row.undo) return;
@@ -44,34 +41,27 @@ export function LogScreen({ active }: { active: boolean }) {
   };
 
   return (
-    <FlatList
-      style={common.screen}
-      contentContainerStyle={common.pad}
-      data={rows}
-      keyExtractor={(r) => String(r.id)}
-      ListHeaderComponent={
-        <View>
-          <Text style={common.h1}>Protokoll</Text>
-          <Text style={[common.sub, { marginBottom: 12 }]}>Alles, was der Agent getan hat. Änderungen kannst du hier rückgängig machen.</Text>
-        </View>
-      }
-      ListEmptyComponent={<Text style={common.sub}>Noch keine Aktivität.</Text>}
-      renderItem={({ item }) => (
-        <View style={[common.card, { borderLeftWidth: 4, borderLeftColor: KIND_COLOR[item.kind] ?? colors.border }]}>
-          <Text style={common.sub}>{fmt(item.ts)}</Text>
-          <Text style={common.text}>{item.label}</Text>
-          {item.detail ? <Text style={[common.sub, { marginTop: 2 }]} numberOfLines={4}>{item.detail}</Text> : null}
-          {item.undo ? (
-            item.undone === 1 ? (
-              <Text style={[common.sub, { marginTop: 6 }]}>Rückgängig gemacht</Text>
+    <Page>
+      <Sub style={{ marginBottom: 14 }}>Alles, was der Agent getan hat. Änderungen kannst du hier rückgängig machen.</Sub>
+      {rows.length === 0 ? <Empty text="Noch keine Aktivität." /> : null}
+      {rows.map((r) => (
+        <Card key={r.id} accent={color[r.kind] ?? t.line}>
+          <Sub>{fmt(r.ts)}</Sub>
+          <Body>{r.label}</Body>
+          {r.detail ? (
+            <Sub style={{ marginTop: 2 }} numberOfLines={4}>
+              {r.detail}
+            </Sub>
+          ) : null}
+          {r.undo ? (
+            r.undone === 1 ? (
+              <Sub style={{ marginTop: 6 }}>Rückgängig gemacht</Sub>
             ) : (
-              <Pressable style={[common.btnGhost, { marginTop: 8, alignSelf: 'flex-start', paddingVertical: 6 }]} onPress={() => undo(item)}>
-                <Text style={[common.btnGhostText, { fontSize: 13 }]}>Rückgängig</Text>
-              </Pressable>
+              <Btn label="Rückgängig" kind="tonal" small onPress={() => undo(r)} style={{ marginTop: 8, alignSelf: 'flex-start' }} />
             )
           ) : null}
-        </View>
-      )}
-    />
+        </Card>
+      ))}
+    </Page>
   );
 }
