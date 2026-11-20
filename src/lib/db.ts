@@ -65,6 +65,11 @@ async function init(): Promise<SQLite.SQLiteDatabase> {
     CREATE TABLE IF NOT EXISTS reminders (
       id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, ts INTEGER NOT NULL, notif_id TEXT);
   `);
+  try {
+    await db.execAsync('ALTER TABLE messages ADD COLUMN image TEXT');
+  } catch {
+    /* Spalte existiert schon */
+  }
   return db;
 }
 
@@ -80,13 +85,25 @@ export async function kvSet(key: string, value: string): Promise<void> {
 }
 
 // ---- messages ----
-export async function addMessage(role: 'user' | 'assistant', text: string): Promise<void> {
+export async function addMessage(role: 'user' | 'assistant', text: string, image?: string): Promise<void> {
   const db = await getDb();
-  await db.runAsync('INSERT INTO messages (ts, role, text) VALUES (?, ?, ?)', [Date.now(), role, text]);
+  await db.runAsync('INSERT INTO messages (ts, role, text, image) VALUES (?, ?, ?, ?)', [Date.now(), role, text, image ?? null]);
+  if (image) {
+    // nur die letzten 3 Fotos behalten, damit die Datenbank klein bleibt
+    await db.runAsync(
+      'UPDATE messages SET image = NULL WHERE image IS NOT NULL AND id NOT IN (SELECT id FROM messages WHERE image IS NOT NULL ORDER BY id DESC LIMIT 3)',
+    );
+  }
 }
 export async function recentMessages(limit: number): Promise<MsgRow[]> {
   const db = await getDb();
-  const rows = await db.getAllAsync<MsgRow>('SELECT * FROM messages ORDER BY id DESC LIMIT ?', [limit]);
+  const rows = await db.getAllAsync<MsgRow>('SELECT id, ts, role, text FROM messages ORDER BY id DESC LIMIT ?', [limit]);
+  return rows.reverse();
+}
+/** Für den Agenten: Verlauf inklusive Foto (Base64) bei Nachrichten, die eines haben. */
+export async function recentMessagesWithImages(limit: number): Promise<(MsgRow & { image: string | null })[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<MsgRow & { image: string | null }>('SELECT id, ts, role, text, image FROM messages ORDER BY id DESC LIMIT ?', [limit]);
   return rows.reverse();
 }
 

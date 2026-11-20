@@ -145,11 +145,23 @@ export async function runAgent(userText: string, imageBase64?: string): Promise<
     await db.addLog(runId, 'run', `Auftrag: ${userText.slice(0, 80)}`, userText);
     status.step('info', 'Auftrag erhalten', userText.slice(0, 120));
 
-    const history = await db.recentMessages(12);
+    const history = await db.recentMessagesWithImages(12);
+    // nur die zwei neuesten Fotos aus dem Verlauf erneut mitschicken (Token sparen)
+    const keepImages = new Set(history.filter((h) => h.image).slice(-2).map((h) => h.id));
     const messages: Msg[] = [];
     for (const h of history) {
       if (messages.length === 0 && h.role === 'assistant') continue;
-      messages.push({ role: h.role, content: h.text } as Msg);
+      if (h.image && keepImages.has(h.id)) {
+        messages.push({
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: h.image } },
+            { type: 'text', text: h.text || 'Foto' },
+          ],
+        } as Msg);
+      } else {
+        messages.push({ role: h.role, content: h.text } as Msg);
+      }
     }
     if (imageBase64) {
       messages.push({
@@ -159,7 +171,7 @@ export async function runAgent(userText: string, imageBase64?: string): Promise<
           { type: 'text', text: userText || 'Was siehst du auf dem Foto? Trage ein, was sich eintragen lässt.' },
         ],
       });
-      await db.addMessage('user', `📷 ${userText}`.trim());
+      await db.addMessage('user', `📷 ${userText}`.trim(), imageBase64);
     } else {
       messages.push({ role: 'user', content: userText });
       await db.addMessage('user', userText);
