@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NAV, Screen } from '../nav';
@@ -20,21 +20,17 @@ export function Drawer({
   const { width } = useWindowDimensions();
   const w = Math.min(width * 0.82, 340);
   const x = useRef(new Animated.Value(-w)).current;
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     if (visible) {
-      setMounted(true);
       Animated.timing(x, { toValue: 0, duration: 220, useNativeDriver: true }).start();
     } else {
-      Animated.timing(x, { toValue: -w, duration: 180, useNativeDriver: true }).start(() => setMounted(false));
+      Animated.timing(x, { toValue: -w, duration: 180, useNativeDriver: true }).start();
     }
   }, [visible, w, x]);
 
-  if (!mounted) return null;
-
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+    <View style={StyleSheet.absoluteFill} pointerEvents={visible ? 'box-none' : 'none'}>
       <Animated.View
         style={[StyleSheet.absoluteFill, { backgroundColor: '#000', opacity: x.interpolate({ inputRange: [-w, 0], outputRange: [0, 0.5] }) }]}
       >
