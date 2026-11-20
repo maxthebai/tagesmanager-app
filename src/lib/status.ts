@@ -73,6 +73,8 @@ function subscribe(cb: () => void): () => void {
   };
 }
 
+export const subscribeStatus = subscribe;
+
 export function useStatus(): Snapshot {
   return useSyncExternalStore(subscribe, status.get, status.get);
 }

@@ -7,6 +7,7 @@ import { Drawer } from './src/components/Drawer';
 import { LiveView } from './src/components/LiveView';
 import { TopBar } from './src/components/TopBar';
 import { kvGet, kvSet } from './src/lib/db';
+import { startLiveBridge } from './src/lib/live';
 import { initNotifications } from './src/lib/notifications';
 import { Screen, TITLES } from './src/nav';
 import { BRIEFING_PROMPT } from './src/prompts';
@@ -41,6 +42,7 @@ function Shell() {
 
   useEffect(() => {
     void initNotifications();
+    startLiveBridge();
   }, []);
 
   // Tipp auf die Briefing-Benachrichtigung startet das Briefing (einmal pro Benachrichtigung).

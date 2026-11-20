@@ -2,13 +2,13 @@
   "expo": {
     "name": "Tagesmanager",
     "slug": "tagesmanager-app",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "backgroundColor": "#131314",
     "android": {
       "package": "de.maxthebai.tagesmanager",
-      "versionCode": 2,
+      "versionCode": 3,
       "adaptiveIcon": {
         "backgroundColor": "#131314",
         "foregroundImage": "./assets/android-icon-foreground.png",
