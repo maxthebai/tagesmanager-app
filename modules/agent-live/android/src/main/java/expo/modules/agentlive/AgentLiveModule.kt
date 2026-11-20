@@ -24,7 +24,7 @@ class AgentLiveModule : Module() {
       AgentLiveService.listener = null
     }
 
-    // mode: "run" | "approval" | "finish" | "stop"
+    // mode: "run" | "approval" | "hold" | "finish" | "stop"
     Function("update") { mode: String, title: String, text: String, step: Int, max: Int, chip: String, silentFinish: Boolean ->
       val c = ctx() ?: return@Function false
       try {
@@ -36,7 +36,7 @@ class AgentLiveModule : Module() {
         i.putExtra("max", max)
         i.putExtra("chip", chip)
         i.putExtra("silent", silentFinish)
-        if (Build.VERSION.SDK_INT >= 26 && (mode == "run" || mode == "approval")) c.startForegroundService(i) else c.startService(i)
+        if (Build.VERSION.SDK_INT >= 26 && (mode == "run" || mode == "approval" || mode == "hold")) c.startForegroundService(i) else c.startService(i)
         true
       } catch (e: Exception) {
         false

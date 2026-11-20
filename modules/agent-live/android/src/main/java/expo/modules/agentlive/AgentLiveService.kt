@@ -26,7 +26,7 @@ class AgentLiveService : Service() {
     val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     try {
       when (mode) {
-        "run", "approval" -> {
+        "run", "approval", "hold" -> {
           ensureChannel(nm)
           val n = build(intent!!, mode)
           if (Build.VERSION.SDK_INT >= 34) startForeground(ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
@@ -100,6 +100,13 @@ class AgentLiveService : Service() {
     }
 
     b.setOngoing(true)
+    if (mode == "hold") {
+      // Glyph leuchtet noch: Dienst am Leben halten, damit die App als Vordergrund gilt
+      b.setCategory(Notification.CATEGORY_STATUS)
+      if (Build.VERSION.SDK_INT >= 31) b.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
+      b.addAction(Notification.Action.Builder(null as Icon?, "Okay", actionIntent("dismiss", 4)).build())
+      return b.build()
+    }
     b.setCategory(Notification.CATEGORY_PROGRESS)
     if (Build.VERSION.SDK_INT >= 31) b.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
 

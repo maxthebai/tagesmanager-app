@@ -12,6 +12,12 @@ export type GlyphState = 'off' | 'blink' | 'talk' | 'done' | 'test';
 const native = requireOptionalNativeModule<Native>('AgentGlyph');
 let current: GlyphState = 'off';
 let setWhileBackground = false;
+const offListeners = new Set<() => void>();
+
+export const glyphState = (): GlyphState => current;
+export const onGlyphOff = (cb: () => void): void => {
+  offListeners.add(cb);
+};
 
 export function glyphAvailable(): boolean {
   try {
@@ -27,6 +33,7 @@ export async function setGlyph(state: GlyphState): Promise<void> {
   const s = await getSettings();
   if (!s.glyphEnabled && state !== 'test' && state !== 'off') return;
   current = state;
+  if (state === 'off') offListeners.forEach((cb) => cb());
   setWhileBackground = AppState.currentState !== 'active';
   try {
     native.setState(state, s.glyphDoneZone);
