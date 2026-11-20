@@ -1,0 +1,60 @@
+import { StyleSheet } from 'react-native';
+
+export const colors = {
+  bg: '#0e1013',
+  card: '#181b21',
+  card2: '#21252d',
+  border: '#2b303a',
+  text: '#e9ecf2',
+  sub: '#9aa3b2',
+  accent: '#6ea8ff',
+  ok: '#4ade80',
+  warn: '#fbbf24',
+  err: '#f87171',
+};
+
+export const common = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.bg },
+  pad: { padding: 16 },
+  h1: { color: colors.text, fontSize: 22, fontWeight: '700', marginBottom: 12 },
+  h2: { color: colors.text, fontSize: 16, fontWeight: '600', marginTop: 16, marginBottom: 8 },
+  text: { color: colors.text, fontSize: 15 },
+  sub: { color: colors.sub, fontSize: 13 },
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  row: { flexDirection: 'row', alignItems: 'center' },
+  input: {
+    backgroundColor: colors.card2,
+    color: colors.text,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  btn: {
+    backgroundColor: colors.accent,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  btnText: { color: '#0b1220', fontWeight: '700', fontSize: 15 },
+  btnGhost: {
+    backgroundColor: colors.card2,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  btnGhostText: { color: colors.text, fontWeight: '600', fontSize: 15 },
+});
