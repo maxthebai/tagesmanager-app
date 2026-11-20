@@ -23,7 +23,7 @@ export type Settings = {
   /** Nothing Glyph (Phone 3a / 3a Pro) für Agent-Signale */
   glyphEnabled: boolean;
   /** Zone für "fertig": A, B oder C */
-  glyphDoneZone: 'C' | 'B' | 'C';
+  glyphDoneZone: 'A' | 'B' | 'C';
 };
 
 const DEFAULTS: Settings = {
