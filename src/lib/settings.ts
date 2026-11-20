@@ -23,7 +23,7 @@ export type Settings = {
   /** Nothing Glyph (Phone 3a / 3a Pro) für Agent-Signale */
   glyphEnabled: boolean;
   /** Zone für "fertig": A, B oder C */
-  glyphDoneZone: 'A' | 'B' | 'C';
+  glyphDoneZone: 'C' | 'B' | 'C';
 };
 
 const DEFAULTS: Settings = {
@@ -36,7 +36,7 @@ const DEFAULTS: Settings = {
   briefingTime: '07:00',
   mailInbox: '',
   glyphEnabled: true,
-  glyphDoneZone: 'A',
+  glyphDoneZone: 'C',
 };
 
 export async function getSettings(): Promise<Settings> {
