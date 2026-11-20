@@ -20,6 +20,10 @@ export type Settings = {
   briefingTime: string;
   /** AgentMail-Postfach, z. B. mein-agent@agentmail.to */
   mailInbox: string;
+  /** Nothing Glyph (Phone 3a / 3a Pro) für Agent-Signale */
+  glyphEnabled: boolean;
+  /** Zone für "fertig": A, B oder C */
+  glyphDoneZone: 'A' | 'B' | 'C';
 };
 
 const DEFAULTS: Settings = {
@@ -31,6 +35,8 @@ const DEFAULTS: Settings = {
   briefingEnabled: false,
   briefingTime: '07:00',
   mailInbox: '',
+  glyphEnabled: true,
+  glyphDoneZone: 'A',
 };
 
 export async function getSettings(): Promise<Settings> {

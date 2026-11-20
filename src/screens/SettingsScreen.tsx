@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, Switch } from 'react-native';
 import { Body, Btn, Card, Chip, Empty, Field, Page, Row, Section, Sub } from '../components/ui';
 import { deleteMemory, listMemory, MemRow, usageToday, wipeAll } from '../lib/db';
+import { glyphAvailable, setGlyph } from '../lib/glyph';
 import { validHM } from '../lib/logic';
 import { cancelBriefing, scheduleBriefing } from '../lib/notifications';
 import {
@@ -162,6 +163,34 @@ export function SettingsScreen({ active }: { active: boolean }) {
             />
           ) : null}
         </Row>
+      </Section>
+
+      <Section title="Nothing Glyph">
+        <Card>
+          <Row style={{ justifyContent: 'space-between' }}>
+            <Body style={{ flex: 1, paddingRight: 12 }}>Glyph-Signale</Body>
+            <Switch value={s.glyphEnabled} onValueChange={(v) => void update({ glyphEnabled: v })} />
+          </Row>
+          <Sub style={{ marginTop: 4 }}>
+            Blinkt bei Freigabe-Fragen, alle LEDs an, wenn der Agent mit dir sprechen will, eine Zone dauerhaft, wenn etwas fertig ist.
+            {glyphAvailable() ? '' : ' Glyph-SDK in dieser Version nicht eingebaut.'}
+          </Sub>
+          <Sub style={{ marginTop: 10 }}>Zone für „fertig“ (Test leuchtet kurz):</Sub>
+          <Row style={{ marginTop: 6 }}>
+            {(['A', 'B', 'C'] as const).map((z) => (
+              <Chip
+                key={z}
+                label={z}
+                selected={s.glyphDoneZone === z}
+                onPress={async () => {
+                  await update({ glyphDoneZone: z });
+                  await setGlyph('test');
+                  setTimeout(() => void setGlyph('off'), 2500);
+                }}
+              />
+            ))}
+          </Row>
+        </Card>
       </Section>
 
       <Section title="Selbstständigkeit">

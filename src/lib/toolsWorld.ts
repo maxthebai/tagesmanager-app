@@ -1,6 +1,7 @@
 import * as db from './db';
 import { listMail, readMail, sendMail } from './mail';
 import { ensureNotificationPermission, scheduleReminder } from './notifications';
+import { setGlyph } from './glyph';
 import { getSettings } from './settings';
 import { status } from './status';
 import { fmtDateTime, parseDate } from './time';
@@ -8,6 +9,12 @@ import { getWeather } from './weather';
 import { declined, fail, Input, ISO_HINT, needsApproval, num, ok, str, ToolDef, ToolResult } from './toolkit';
 
 export const WORLD_TOOLS: ToolDef[] = [
+  {
+    name: 'signal_user',
+    description:
+      'Lässt die Glyph-LEDs des Handys leuchten, damit der Nutzer aufmerksam wird. kind "talk": du willst mit dem Nutzer sprechen (Rückfrage, Plan oder To-do-Liste zum Besprechen). kind "done": du bist mit etwas fertig, das der Nutzer ansehen sollte (Briefing, Ergebnis). Nutze es sparsam, nur am Ende einer Antwort.',
+    input_schema: { type: 'object', properties: { kind: { type: 'string', enum: ['talk', 'done'] } }, required: ['kind'] },
+  },
   {
     name: 'get_weather',
     description: 'Wetter für die nächsten 4 Tage. Ohne city wird der Ort aus den Einstellungen genutzt.',
@@ -52,6 +59,12 @@ export const WORLD_TOOLS: ToolDef[] = [
 
 export async function execWorld(name: string, input: Input, runId: number): Promise<ToolResult | null> {
   switch (name) {
+    case 'signal_user': {
+      const kind = str(input.kind);
+      if (kind !== 'talk' && kind !== 'done') return fail('kind muss "talk" oder "done" sein.');
+      await setGlyph(kind);
+      return ok({ signaled: kind });
+    }
     case 'get_weather': {
       const settings = await getSettings();
       const city = str(input.city) ?? settings.city;

@@ -1,0 +1,20 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.agentglyph'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.agentglyph"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+}
+
+dependencies {
+  // Nothing Glyph SDK (classes.jar aus dem offiziellen AAR). Ohne Datei läuft die App normal, nur ohne Glyph.
+  implementation fileTree(dir: 'libs', include: ['*.jar'])
+}
