@@ -57,7 +57,7 @@ export function ChatScreen({
   }, [load]);
 
   useEffect(() => {
-    if (active) void getSettings().then((x) => setName(x.name));
+    if (active && !status.get().running) void load();
   }, [active]);
 
   useEffect(() => {

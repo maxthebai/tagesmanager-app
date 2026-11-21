@@ -100,6 +100,10 @@ export async function recentMessages(limit: number): Promise<MsgRow[]> {
   const rows = await db.getAllAsync<MsgRow>('SELECT id, ts, role, text FROM messages ORDER BY id DESC LIMIT ?', [limit]);
   return rows.reverse();
 }
+export async function clearMessages(): Promise<void> {
+  const db = await getDb();
+  await db.runAsync('DELETE FROM messages');
+}
 /** Für den Agenten: Verlauf inklusive Foto (Base64) bei Nachrichten, die eines haben. */
 export async function recentMessagesWithImages(limit: number): Promise<(MsgRow & { image: string | null })[]> {
   const db = await getDb();

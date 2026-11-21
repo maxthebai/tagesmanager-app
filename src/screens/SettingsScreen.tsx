@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Switch } from 'react-native';
 import { Body, Btn, Card, Chip, Empty, Field, Page, Row, Section, Sub } from '../components/ui';
-import { deleteMemory, listMemory, MemRow, usageToday, wipeAll } from '../lib/db';
+import { clearMessages, deleteMemory, listMemory, MemRow, usageToday, wipeAll } from '../lib/db';
 import { glyphAvailable, setGlyph } from '../lib/glyph';
 import { validHM } from '../lib/logic';
 import { cancelBriefing, scheduleBriefing } from '../lib/notifications';
@@ -235,6 +235,17 @@ export function SettingsScreen({ active }: { active: boolean }) {
       </Section>
 
       <Section title="Daten">
+        <Btn
+          label="Chat-Verlauf leeren"
+          kind="tonal"
+          onPress={() =>
+            Alert.alert('Chat leeren?', 'Nur der Verlauf wird gelöscht. Aufgaben, Noten, Stundenplan und Protokoll bleiben erhalten.', [
+              { text: 'Abbrechen', style: 'cancel' },
+              { text: 'Leeren', style: 'destructive', onPress: () => void clearMessages() },
+            ])
+          }
+          style={{ marginBottom: 10 }}
+        />
         <Btn
           label="Alle App-Daten löschen"
           kind="danger"
